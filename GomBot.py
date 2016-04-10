@@ -12,9 +12,6 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-logging.basicConfig(level=logging.DEBUG)
-conf_file = 'gombot-settings.json'
-
 class GomBot(telepot.Bot):
 	token=''
 	admin_id=[]
@@ -44,17 +41,17 @@ class GomBot(telepot.Bot):
 		if flavor == 'normal':
 			content_type, chat_type, chat_id = telepot.glance(msg)
 			print('Normal Message:', content_type, chat_type, chat_id)
-			logging.debug(json.dumps(msg, ensure_ascii=False))
+			log.debug(json.dumps(msg, ensure_ascii=False))
 			command = msg['text'].encode('utf-8')
 			from_id = str(msg['from']['id'])
 			chat_id = msg['chat']['id'] 
 			
 			if command == "/셧다운":
-				logging.debug("셧다운 권한확인")
+				log.debug("셧다운 권한확인")
 				if str(from_id) in self.admin_id:
 					self.sendMessage(chat_id,"모든 서버를 셧다운 합니다.")
 				else:
-					logging.debug(from_id+ " 권한 없는 사용자가 셧다운 시도")
+					log.debug(from_id+ " 권한 없는 사용자가 셧다운 시도")
 					self.sendMessage(chat_id,"권한이 없습니다.")
 			elif command == '/하이':
 				self.sendMessage(chat_id,"반갑구만 반가워요")
@@ -66,7 +63,7 @@ class GomBot(telepot.Bot):
 				keyword = command[8:]
 				url = "https://torrentkim3.net/bbs/rss.php?k=%s"%(urllib.quote(keyword))
 
-				logging.debug(keyword + " " + url)
+				log.debug(keyword + " " + url)
 				self.menu = feedparser.parse(url)
 
 				output_list =[]
@@ -76,7 +73,7 @@ class GomBot(telepot.Bot):
 
 					temp_list = []
 					temp_list.append(title[:50])
-					logging.debug(title)
+					log.debug(title)
 					output_list.append(temp_list)
 
 
@@ -89,11 +86,11 @@ class GomBot(telepot.Bot):
 				index = int(command.split('.')[0]) - 1
 				magnet = self.menu.entries[index].link
 				title = str(self.menu.entries[index].title)
-				logging.debug("제목은 "+title)
+				log.debug("제목은 "+title)
 				tc = Transmission()
 				dn_path = tc.get_dnpath(title)
 				#print ("link: ", magnet)
-				logging.debug ("다운로드경로는 " + dn_path)
+				log.debug ("다운로드경로는 " + dn_path)
 				to = tc.add_torrent(magnet,download_dir=dn_path)
 				if (to):
 					self.sendMessage(chat_id,'다운로드가 시작되었습니다.')
@@ -146,21 +143,21 @@ class Transmission(transmissionrpc.Client):
 	tc = ''
 
 	def __init__(self):
-		logging.debug(self.shost + " ")
-		logging.debug(self.sport)
-		logging.debug(self.uname + " " + self.upass)
+		log.debug(self.shost + " ")
+		log.debug(self.sport)
+		log.debug(self.uname + " " + self.upass)
 		super(Transmission, self).__init__(self.shost, self.sport, self.uname,self.upass)
 
 	
 	def get_dir(self):
 		import os
 		list = os.listdir(self.mediapath+self.tvdir)
-		logging.debug(json.dumps(list, ensure_ascii=False))
+		log.debug(json.dumps(list, ensure_ascii=False))
 		return list
 
 	def get_dnpath(self, filename):
 		title = filename.split('.')[0]
-		logging.debug(title +" 제목을  기준으로 확인중")
+		log.debug(title +" 제목을  기준으로 확인중")
 		list = self.get_dir()
 
 		found = False
@@ -168,7 +165,7 @@ class Transmission(transmissionrpc.Client):
 			if n in title:
 				#문자열이 존재하면
 				dn_dir = self.mediapath+self.tvdir+"/"+n+"/"
-				logging.info("기존 디렉토리 찾음 " + n)
+				log.info("기존 디렉토리 찾음 " + n)
 				return dn_dir
 
 		if (self.is_tv(title)):
@@ -178,7 +175,7 @@ class Transmission(transmissionrpc.Client):
 			# 영화라 치자
 			dn_dir =  self.mediapath+self.moviedir+"/"+title+"/"
 
-		logging.debug(dn_dir+"로 결정")
+		log.info(dn_dir+"에 다운로드 합니다.")
 		return dn_dir
 
 	def is_tv(self,title):
@@ -187,7 +184,7 @@ class Transmission(transmissionrpc.Client):
 
 
 		if  (not found):
-			logging.info("_"+title + "_ TVDB를 참조합니다.")
+			log.debug("_"+title + "_ TVDB를 참조합니다.")
 			# TV프로그램인지 확인해보자
 			import urllib
 			import xml.etree.ElementTree as ET
@@ -201,11 +198,11 @@ class Transmission(transmissionrpc.Client):
 			for element in rss.findall("Series"):
 				seriesid = element.findtext("seriesid")
 				dn_dir = self.mediapath+self.tvdir+"/"+title+"/"
-				logging.debug(dn_dir)
+				log.debug(dn_dir)
 			if (seriesid != -1):
 				found = True
 			else:
-				logging.info("찾지 못했습니다." + url)
+				log.debug("찾지 못했습니다." + url)
 		return  found
 
 def loadConf():
@@ -226,19 +223,36 @@ def loadConf():
 	Transmission.tvdir = conf['transmission']['tvdir']
 	Transmission.moviedir = conf['transmission']['moviedir']
 
-import logging
 import time
-from daemon import runner # python-daemon
-
+from daemon import runner # python-daemon2
+import logging.handlers
+#load configuration
+conf_file = 'gombot-settings.json'
 loadConf()
 
 bot = GomBot()
-logger = logging.getLogger("DaemonLog")
-logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler = logging.FileHandler("./GomBot.log")
+
+log = logging.getLogger("GomBot")
+log.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s - %(name)s:%(levelname)s - %(message)s (%(filename)s:%(lineno)s)",datefmt='%Y-%m-%d %H:%M:%S')
+handler = logging.handlers.RotatingFileHandler("GomBot.log", maxBytes=1024, backupCount=10)
 handler.setFormatter(formatter)
-logger.addHandler(handler)
+handler2 = logging.StreamHandler()
+handler2.setFormatter(formatter)
+log.addHandler(handler)
+log.addHandler(handler2)
+
+
+
+if (sys.argv[1] == "foreground"):
+	log.debug("Foreground mode start")
+	log.setLevel(logging.DEBUG)
+	log.debug("Debug mode setted.")
+	bot.run()
+	exit()
+else:
+	log.debug("Background mode start")
+	
 daemon_runner = runner.DaemonRunner(bot)
 daemon_runner.daemon_context.files_preserve=[handler.stream]
 daemon_runner.do_action()
