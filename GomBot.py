@@ -47,7 +47,7 @@ class GomBot(telepot.Bot):
 			logging.debug(json.dumps(msg, ensure_ascii=False))
 			command = msg['text'].encode('utf-8')
 			from_id = str(msg['from']['id'])
-			chat_id = msg['from']['chat'] 
+			chat_id = msg['chat']['id'] 
 			
 			if command == "/셧다운":
 				logging.debug("셧다운 권한확인")
@@ -215,6 +215,7 @@ def loadConf():
 
 	GomBot.token = conf['telegram']['token']
 	GomBot.admin_id = conf['telegram']['admin_id']
+	GomBot.public_room = conf['telegram']['public_room']
 
 	Transmission.shost = conf['transmission']['host']
 	Transmission.sport = conf['transmission']['port']
