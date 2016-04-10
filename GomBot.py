@@ -18,6 +18,7 @@ conf_file = 'gombot-settings.json'
 class GomBot(telepot.Bot):
 	token=''
 	admin_id=[]
+	public_room=[]
 	READY="토렌트 다운로드"
 	menu = ''
 
@@ -46,7 +47,8 @@ class GomBot(telepot.Bot):
 			logging.debug(json.dumps(msg, ensure_ascii=False))
 			command = msg['text'].encode('utf-8')
 			from_id = str(msg['from']['id'])
-
+			chat_id = msg['from']['chat'] 
+			
 			if command == "/셧다운":
 				logging.debug("셧다운 권한확인")
 				if str(from_id) in self.admin_id:
@@ -57,6 +59,10 @@ class GomBot(telepot.Bot):
 			elif command == '/하이':
 				self.sendMessage(chat_id,"반갑구만 반가워요")
 			elif command.startswith("/검색"): # 토렌트 검색해야지
+				if chat_id in self.public_room: # 채팅방이 공방이면
+					self.sendMessage(chat_id, "공개방입니다. 봇을 따로 소환해 검색하세요")
+					return
+				
 				keyword = command[8:]
 				url = "https://torrentkim3.net/bbs/rss.php?k=%s"%(urllib.quote(keyword))
 
@@ -221,7 +227,7 @@ def loadConf():
 
 import logging
 import time
-from daemon import runner
+from daemon import runner # python-daemon
 
 loadConf()
 
