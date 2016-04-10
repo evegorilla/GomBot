@@ -11,5 +11,5 @@ But, my goal is be going to control everything in my sweethome even though lamps
 필요한 라이브러리
 >telepot, feedparser, transmissionrpc, daemon2
 
-
-python GomBot.py start|stop|restart
+실행방법
+>python GomBot.py start|stop|restart

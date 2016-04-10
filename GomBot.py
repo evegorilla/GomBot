@@ -60,7 +60,7 @@ class GomBot(telepot.Bot):
 				self.sendMessage(chat_id,"반갑구만 반가워요")
 			elif command.startswith("/검색"): # 토렌트 검색해야지
 				if chat_id in self.public_room: # 채팅방이 공방이면
-					self.sendMessage(chat_id, "공개방입니다. 봇을 따로 소환해 검색하세요")
+					self.sendMessage(chat_id, "공개방입니다.\n 봇을 따로 소환해 검색하세요")
 					return
 				
 				keyword = command[8:]
