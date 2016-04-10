@@ -1,0 +1,18 @@
+{
+        "telegram" : {
+                "token" : "텔레그램에서 받은 토큰",
+                "admin_id" : [본인아이디], #어드민 리스트
+                "public_room" : [공개방] #공개방에선 토렌트 검색불가
+        },
+        "transmission" : {
+                "host" : "서버아이피",
+                "port" : 9091,
+                "user" : "아이디",
+                "pass" : "패스워드",
+                "url" : "https://torrentkim3.net/bbs/rss.php?k=%s",
+                "mediapath" : "/opt/Media/", #미디어파일 디렉토리경로 
+                "tvdir": "TV Shows", 
+                "moviedir":"Movies"
+        }
+
+}
