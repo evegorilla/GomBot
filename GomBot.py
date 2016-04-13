@@ -9,8 +9,8 @@ import pprint
 import feedparser
 import urllib
 import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
+#reload(sys)
+#sys.setdefaultencoding('utf-8')
 
 class GomBot(telepot.Bot):
 	token=''
@@ -30,7 +30,7 @@ class GomBot(telepot.Bot):
 
 	def run(self):
 		self.notifyOnMessage()
-		print('Listening ...')
+		log.debug('Listening ...')
 		while 1:
 			time.sleep(10)
 		
@@ -40,7 +40,7 @@ class GomBot(telepot.Bot):
 		# normal message
 		if flavor == 'normal':
 			content_type, chat_type, chat_id = telepot.glance(msg)
-			print('Normal Message:', content_type, chat_type, chat_id)
+			log.info('Normal Message:', content_type, chat_type, chat_id)
 			log.debug(json.dumps(msg, ensure_ascii=False))
 			command = msg['text'].encode('utf-8')
 			from_id = str(msg['from']['id'])
@@ -81,7 +81,7 @@ class GomBot(telepot.Bot):
 				self.sendMessage(chat_id,'선택해주세요',reply_markup=show_keyboard)
 				self.mode=self.READY
 
-			elif (self.mode==self.READY): #다운로드시작
+			elif (self.mode==self.READY): #Now downloadging
 				self.mode=''
 				index = int(command.split('.')[0]) - 1
 				magnet = self.menu.entries[index].link
@@ -89,7 +89,7 @@ class GomBot(telepot.Bot):
 				log.debug("제목은 "+title)
 				tc = Transmission()
 				dn_path = tc.get_dnpath(title)
-				#print ("link: ", magnet)
+				#log.debug ("link: ", magnet)
 				log.debug ("다운로드경로는 " + dn_path)
 				to = tc.add_torrent(magnet,download_dir=dn_path)
 				if (to):
@@ -130,6 +130,13 @@ class GomBot(telepot.Bot):
 		else:
 			raise telepot.BadFlavor(msg)
 
+
+class Plexmediaserver():
+	#LD_LIBRARY_PATH=/usr/lib/plexmediaserver
+	#curl http://192.168.0.20:32400/library/sections/2/refresh
+	def __init__(selfself):
+		log.debug("plex init")
+		
 import transmissionrpc
 class Transmission(transmissionrpc.Client):
 	shost = ''
@@ -234,7 +241,8 @@ bot = GomBot()
 
 log = logging.getLogger("GomBot")
 log.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(name)s:%(levelname)s - %(message)s (%(filename)s:%(lineno)s)",datefmt='%Y-%m-%d %H:%M:%S')
+formatter = logging.Formatter("%(asctime)s %(name)s:%(levelname)s %(message)s (%(filename)s:%(lineno)s)",
+							datefmt='%Y-%m-%d %H:%M:%S')
 handler = logging.handlers.RotatingFileHandler("GomBot.log", maxBytes=1024, backupCount=10)
 handler.setFormatter(formatter)
 handler2 = logging.StreamHandler()
@@ -242,16 +250,14 @@ handler2.setFormatter(formatter)
 log.addHandler(handler)
 log.addHandler(handler2)
 
-
-
 if (sys.argv[1] == "foreground"):
-	log.debug("Foreground mode start")
+	log.info("Foreground mode start")
 	log.setLevel(logging.DEBUG)
 	log.debug("Debug mode setted.")
 	bot.run()
 	exit()
 else:
-	log.debug("Background mode start")
+	log.info("Background mode start")
 	
 daemon_runner = runner.DaemonRunner(bot)
 daemon_runner.daemon_context.files_preserve=[handler.stream]
