@@ -16,7 +16,8 @@ class GomBot(telepot.Bot):
 	token=''
 	admin_id=[]
 	public_room=[]
-	READY="토렌트 다운로드"
+	mode = ''
+	READY= "토렌트 다운로드"
 	menu = ''
 
 	def __init__(self):
@@ -40,12 +41,12 @@ class GomBot(telepot.Bot):
 		# normal message
 		if flavor == 'normal':
 			content_type, chat_type, chat_id = telepot.glance(msg)
-			log.info('Normal Message:', content_type, chat_type, chat_id)
+			log.info('Normal Message:%s %s %s', content_type, chat_type, chat_id)
 			log.debug(json.dumps(msg, ensure_ascii=False))
-			command = msg['text'].encode('utf-8')
+			command = str(msg['text'])
 			from_id = str(msg['from']['id'])
 			chat_id = msg['chat']['id'] 
-			
+			log.debug(command)
 			if command == "/셧다운":
 				log.debug("셧다운 권한확인")
 				if str(from_id) in self.admin_id:
@@ -55,21 +56,22 @@ class GomBot(telepot.Bot):
 					self.sendMessage(chat_id,"권한이 없습니다.")
 			elif command == '/하이':
 				self.sendMessage(chat_id,"반갑구만 반가워요")
-			elif command.startswith("/검색"): # 토렌트 검색해야지
+			elif command.startswith('/검색'): # 토렌트 검색해야지
 				if chat_id in self.public_room: # 채팅방이 공방이면
 					self.sendMessage(chat_id, "공개방입니다.\n 봇을 따로 소환해 검색하세요")
 					return
 				
-				keyword = command[8:]
-				url = "https://torrentkim3.net/bbs/rss.php?k=%s"%(urllib.quote(keyword))
-
-				log.debug(keyword + " " + url)
-				self.menu = feedparser.parse(url)
-
+				keyword = command[4:]
+				result = self.get_search_list(keyword)
+				
+								
 				output_list =[]
-				for (i,entry) in enumerate(self.menu.entries):
+				for (i,entry) in enumerate(result):
 					if i == 10: break
-					title = str(i+1) + ". " + entry.title
+					import pprint
+					pprint.pprint(entry)
+					exit
+					title = str(i+1) + ". " + entry['title']
 
 					temp_list = []
 					temp_list.append(title[:50])
@@ -129,7 +131,35 @@ class GomBot(telepot.Bot):
 
 		else:
 			raise telepot.BadFlavor(msg)
+	
+	def get_search_list(self, keyword):
+		from bs4 import BeautifulSoup
+		import urllib.request
+		
+		url = Transmission.url % urllib.request.quote(keyword)
+		headers = { 'User-Agent' : 'Mozilla/5.0' }
+		req = urllib.request.Request(url, None, headers)
+		handle = urllib.request.urlopen(req)
 
+		data = handle.read()
+		soup = BeautifulSoup(data,"lxml")
+
+		count = 0
+		arr = {}
+		arrData = []
+		for item in soup.findAll("item"):
+			count = count + 1
+			if (count>10):
+				break
+    
+			log.debug("%d 제목 : %s" % (count,item.title))
+			arr['title'] = item.title
+			# 버그가 있음.. bs4에서 파싱하면 link/로 나옴
+			# 그래서 아래처럼 처리함.
+			arr['link'] = item.link.next_element
+			arrData.append(arr)
+         
+		return arr
 
 class Plexmediaserver():
 	#LD_LIBRARY_PATH=/usr/lib/plexmediaserver
@@ -185,6 +215,10 @@ class Transmission(transmissionrpc.Client):
 		log.info(dn_dir+"에 다운로드 합니다.")
 		return dn_dir
 
+	
+
+		
+		
 	def is_tv(self,title):
 		found = False
 		list = self.get_dir()
@@ -250,7 +284,7 @@ handler2.setFormatter(formatter)
 log.addHandler(handler)
 log.addHandler(handler2)
 
-if (sys.argv[1] == "foreground"):
+if (len(sys.argv)>1 and sys.argv[1] == "foreground"):
 	log.info("Foreground mode start")
 	log.setLevel(logging.DEBUG)
 	log.debug("Debug mode setted.")
