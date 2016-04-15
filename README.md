@@ -12,7 +12,7 @@ GomBot
 pkg install python35
 python35 -m ensurepip
 pip3 install --upgrade pip
-pip3 install telepot feedparser transmissionrpc python-daemon
+pip3 install telepot  transmissionrpc python-daemon bs4 lxml
 
 사용방법
 >실행

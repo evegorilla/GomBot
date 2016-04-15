@@ -16,8 +16,6 @@ class GomBot(telepot.Bot):
 	token=''
 	admin_id=[]
 	public_room=[]
-	mode = ''
-	READY= "토렌트 다운로드"
 	menu = {}
 
 	def __init__(self):
@@ -72,16 +70,15 @@ class GomBot(telepot.Bot):
 				
 				tc = Transmission()
 				dn_path = tc.get_dnpath(menu['title'])
-				log.debug ("title: ", menu['title'])
-				log.debug ("link: ", menu['link'])
-				log.debug ("다운로드경로는 " + dn_path)
+				log.debug ("title: %s "% menu['title'])
+				log.debug ("link: %s "% menu['link'])
+				log.debug ("다운로드경로는 %s" % dn_path)
 				to = tc.add_torrent(menu['link'],download_dir=dn_path)
 				if (to):
-					self.sendMessage(chat_id,'다운로드가 시작되었습니다.')
-					i = 0
-					for item in tc.get_torrents(to):
-						log.debug(item.name)
-
+					log.debug("토렌트id : %s" % to)
+					self.sendMessage(chat_id,'%s 다운로딩' % menu['title'])
+					item = tc.get_torrents(to)
+					log.debug(item.name)
 				else:
 					self.sendMessage(chat_id,'다운로드 실패')
 				
@@ -159,7 +156,7 @@ class GomBot(telepot.Bot):
 		for (i,entry) in enumerate(searchresult):
 			title = "/받기 " + str(i+1) + ". " + entry['title']
 			temp_list = []
-			temp_list.append(title[:30])
+			temp_list.append(title[:50])
 			log.debug(title)
 			output_list.append(temp_list)
 			
@@ -296,9 +293,7 @@ if (len(sys.argv)>1 and sys.argv[1] == "foreground"):
 	log.debug("Debug mode setted.")
 	bot.run()
 	exit()
-else:
-	log.info("Background mode start")
-	
+
 daemon_runner = runner.DaemonRunner(bot)
 daemon_runner.daemon_context.files_preserve=[handler.stream]
 daemon_runner.do_action()
