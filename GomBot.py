@@ -18,7 +18,7 @@ class GomBot(telepot.Bot):
 	public_room=[]
 	mode = ''
 	READY= "토렌트 다운로드"
-	menu = ''
+	menu = {}
 
 	def __init__(self):
 		self.stdin_path = '/dev/null'
@@ -44,7 +44,7 @@ class GomBot(telepot.Bot):
 			log.info('Normal Message:%s %s %s', content_type, chat_type, chat_id)
 			log.debug(json.dumps(msg, ensure_ascii=False))
 			command = str(msg['text'])
-			from_id = str(msg['from']['id'])
+			from_id = msg['from']['id']
 			chat_id = msg['chat']['id'] 
 			log.debug(command)
 			if command == "/셧다운":
@@ -52,7 +52,7 @@ class GomBot(telepot.Bot):
 				if str(from_id) in self.admin_id:
 					self.sendMessage(chat_id,"모든 서버를 셧다운 합니다.")
 				else:
-					log.debug(from_id+ " 권한 없는 사용자가 셧다운 시도")
+					log.debug(" 권한 없는 사용자(%d)가 셧다운 시도" % from_id)
 					self.sendMessage(chat_id,"권한이 없습니다.")
 			elif command == '/하이':
 				self.sendMessage(chat_id,"반갑구만 반가워요")
@@ -63,44 +63,24 @@ class GomBot(telepot.Bot):
 				
 				keyword = command[4:]
 				result = self.get_search_list(keyword)
-				
+				self.set_menu(chat_id, from_id,result)
 								
-				output_list =[]
-				for (i,entry) in enumerate(result):
-					if i == 10: break
-					import pprint
-					pprint.pprint(entry)
-					exit
-					title = str(i+1) + ". " + entry['title']
-
-					temp_list = []
-					temp_list.append(title[:50])
-					log.debug(title)
-					output_list.append(temp_list)
-
-
-				show_keyboard = {'keyboard': output_list}
-				self.sendMessage(chat_id,'선택해주세요',reply_markup=show_keyboard)
-				self.mode=self.READY
-
-			elif (self.mode==self.READY): #Now downloadging
-				self.mode=''
-				index = int(command.split('.')[0]) - 1
-				magnet = self.menu.entries[index].link
-				title = str(self.menu.entries[index].title)
-				log.debug("제목은 "+title)
+			elif command.startswith('/받기'): # 토렌트 검색해야지
+				idx = int(command[3:].split('.')[0]) - 1
+				menu = self.menu[chat_id][idx]
+				log.debug("다운로드주소 : %s" % menu['link'])
+				
 				tc = Transmission()
-				dn_path = tc.get_dnpath(title)
-				#log.debug ("link: ", magnet)
+				dn_path = tc.get_dnpath(menu['title'])
+				log.debug ("title: ", menu['title'])
+				log.debug ("link: ", menu['link'])
 				log.debug ("다운로드경로는 " + dn_path)
-				to = tc.add_torrent(magnet,download_dir=dn_path)
+				to = tc.add_torrent(menu['link'],download_dir=dn_path)
 				if (to):
 					self.sendMessage(chat_id,'다운로드가 시작되었습니다.')
-					print(to.name + " ")
 					i = 0
-					for item in tc.get_torrents():
-						i=i+1	
-						print(item[i].name)
+					for item in tc.get_torrents(to):
+						log.debug(item.name)
 
 				else:
 					self.sendMessage(chat_id,'다운로드 실패')
@@ -145,22 +125,48 @@ class GomBot(telepot.Bot):
 		soup = BeautifulSoup(data,"lxml")
 
 		count = 0
-		arr = {}
+		
+		
 		arrData = []
 		for item in soup.findAll("item"):
 			count = count + 1
 			if (count>10):
 				break
-    
-			log.debug("%d 제목 : %s" % (count,item.title))
-			arr['title'] = item.title
-			# 버그가 있음.. bs4에서 파싱하면 link/로 나옴
-			# 그래서 아래처럼 처리함.
+			
+			arr = {}
+			arr['title'] = item.title.next_element
 			arr['link'] = item.link.next_element
+			log.debug("%d 제목 : %s" % (count,arr['title']))
 			arrData.append(arr)
-         
-		return arr
+				
+		return arrData
+	
+	def set_menu(self,chat_id, from_id, searchresult):
+		self.menu[chat_id] = []
+		
+		for (i,entry) in enumerate(searchresult):
+			arr = {}
+			arr['title'] = entry['title']
+			arr['link'] = entry['link']
+			
+			self.menu[chat_id].append(arr)
+		
+		self.set_keyboard(chat_id, searchresult)
+		
+	def set_keyboard(self,chat_id, searchresult):
+		output_list =[]
+		
+		for (i,entry) in enumerate(searchresult):
+			title = "/받기 " + str(i+1) + ". " + entry['title']
+			temp_list = []
+			temp_list.append(title[:30])
+			log.debug(title)
+			output_list.append(temp_list)
+			
+		show_keyboard = {'keyboard': output_list}
+		self.sendMessage(chat_id,'선택해주세요',reply_markup=show_keyboard)
 
+		
 class Plexmediaserver():
 	#LD_LIBRARY_PATH=/usr/lib/plexmediaserver
 	#curl http://192.168.0.20:32400/library/sections/2/refresh
@@ -277,7 +283,7 @@ log = logging.getLogger("GomBot")
 log.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s %(name)s:%(levelname)s %(message)s (%(filename)s:%(lineno)s)",
 							datefmt='%Y-%m-%d %H:%M:%S')
-handler = logging.handlers.RotatingFileHandler("GomBot.log", maxBytes=1024, backupCount=10)
+handler = logging.handlers.RotatingFileHandler("GomBot.log", maxBytes=10240, backupCount=1)
 handler.setFormatter(formatter)
 handler2 = logging.StreamHandler()
 handler2.setFormatter(formatter)
