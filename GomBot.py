@@ -74,11 +74,13 @@ class GomBot(telepot.Bot):
 				log.debug ("link: %s "% menu['link'])
 				log.debug ("다운로드경로는 %s" % dn_path)
 				to = tc.add_torrent(menu['link'],download_dir=dn_path)
+				
 				if (to):
-					log.debug("토렌트id : %s" % to)
-					self.sendMessage(chat_id,'%s 다운로딩' % menu['title'])
-					item = tc.get_torrents(to)
-					log.debug(item.name)
+					for k in to.keys():
+						log.debug("토렌트id : %s" % k)
+						self.sendMessage(chat_id,'%s 다운로딩' % menu['title'])
+						item = tc.get_torrents(k)
+						log.debug(item.name)
 				else:
 					self.sendMessage(chat_id,'다운로드 실패')
 				
@@ -202,7 +204,7 @@ class Transmission(transmissionrpc.Client):
 
 		found = False
 		for n in list:
-			if n in title:
+			if n.replace(' ','') in title.replace(' ',''):
 				#문자열이 존재하면
 				dn_dir = self.mediapath+self.tvdir+"/"+n+"/"
 				log.info("기존 디렉토리 찾음 " + n)
