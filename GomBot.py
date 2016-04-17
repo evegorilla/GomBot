@@ -98,7 +98,7 @@ class GomBot(telepot.Bot):
 				
 				str = ''
 				for torrent in torrents:
-					str = str + "%s - %s peers %.2f %%\n" % (torrent.name[:15],torrent,peersConnected, torrent.percentDone*100)
+					str = str + "%s - %s peers %.2f %%\n" % (torrent.name[:15],torrent.peersConnected, torrent.percentDone*100)
 				self.sendMessage(chat_id, str)
 				
 		# inline query - need `/setinline`
