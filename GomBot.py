@@ -9,6 +9,7 @@ import pprint
 import feedparser
 import urllib
 import sys
+from _ctypes import Array
 #reload(sys)
 #sys.setdefaultencoding('utf-8')
 
@@ -31,8 +32,20 @@ class GomBot(telepot.Bot):
 		self.notifyOnMessage()
 		log.debug('Listening ...')
 		while 1:
+			tc = Transmission()
+			arr = Transmission.garbage_collection(tc)
+			
+			if len(arr)>0: #노티할애가 있으면
+				pms = Plexmediaserver()
+				if not pms.refresh(2):
+					log.debug("refresh 실패로 완료된 시드유지함")
+					return
+				str = "\n".join(arr)
+				for room in self.public_room:	
+					self.sendMessage(room, "%s\n 준비되었습니다."%str)
+
 			time.sleep(10)
-		
+
 	def handle(self, msg):
 		flavor = telepot.flavor(msg)
 
@@ -82,9 +95,8 @@ class GomBot(telepot.Bot):
 				to = tc.add_torrent(menu['link'],download_dir=dn_path)
 				
 				if (to):
-					log.debug("토렌트id : %s" % k)
+					log.debug("downloading : %s %s" % (to.id, to.name))
 					self.sendMessage(chat_id,'%s 다운로딩' % menu['title'])
-					log.debug(item.name)
 				else:
 					self.sendMessage(chat_id,'다운로드 실패')
 			
@@ -98,7 +110,7 @@ class GomBot(telepot.Bot):
 				
 				str = ''
 				for torrent in torrents:
-					str = str + "%s - %s peers %.2f %%\n" % (torrent.name[:15],torrent.peersConnected, torrent.percentDone*100)
+					str = str + "%s - %s peers %.2f %%\n" % (torrent.name[:20],torrent.peersConnected, torrent.percentDone*100)
 				self.sendMessage(chat_id, str)
 				
 		# inline query - need `/setinline`
@@ -179,9 +191,7 @@ class GomBot(telepot.Bot):
 		show_keyboard = {'keyboard': output_list}
 		self.sendMessage(chat_id,'선택해주세요',reply_markup=show_keyboard)
 
-	def torrent_garbage_collection(self):
-		tc = Transmission()
-		tc.get_torrents()
+
 		
 		
 class Plexmediaserver():
@@ -194,10 +204,14 @@ class Plexmediaserver():
 		log.debug("plex init")
 		
 	def refresh(self, section_id):
-		refresh_url = "http://%s:%s/library/sections/%s/refresh" % (self.host, self.port, section_id)
-		f = urllib.urlopen(self.url)
-		
-		
+		try:
+			refresh_url = "http://%s:%s/library/sections/%s/refresh" % (self.host, self.port, section_id)
+			log.debug("Plex Media Server - %d refresh", section_id)
+			log.debug(refresh_url)
+			f = urllib.request.urlopen(refresh_url)
+			return True
+		except:
+			return False
 		
 import transmissionrpc
 class Transmission(transmissionrpc.Client):
@@ -212,11 +226,19 @@ class Transmission(transmissionrpc.Client):
 	tc = ''
 
 	def __init__(self):
-		log.debug(self.shost + " ")
-		log.debug(self.sport)
-		log.debug(self.uname + " " + self.upass)
 		super(Transmission, self).__init__(self.shost, self.sport, self.uname,self.upass)
-
+	
+	def garbage_collection(self):
+		torrents = self.get_torrents()
+		
+		arr = []
+		for torrent in torrents:
+			if torrent.percentDone == 1: # Downloaded
+				self.remove_torrent(torrent.id)
+				log.debug("Downloaded - %d %s"%(torrent.id, torrent.name))
+				ext_str = torrent.downloadDir.replace(self.mediapath,'')
+				arr.append("%s (%s)"%(torrent.name,ext_str))
+		return arr
 	
 	def get_dir(self):
 		import os
