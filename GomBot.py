@@ -32,6 +32,7 @@ class GomBot(telepot.Bot):
 		log.debug('Listening ...')
 		while 1:
 			time.sleep(10)
+			torrent_garbage_collection() #토렌트 시드제거용~
 		
 	def handle(self, msg):
 		flavor = telepot.flavor(msg)
@@ -169,8 +170,17 @@ class GomBot(telepot.Bot):
 class Plexmediaserver():
 	#LD_LIBRARY_PATH=/usr/lib/plexmediaserver
 	#curl http://192.168.0.20:32400/library/sections/2/refresh
+	host = ''
+	port = ''
+	
 	def __init__(selfself):
 		log.debug("plex init")
+		
+	def refresh(self, section_id):
+		refresh_url = "http://%s:%s/library/sections/%s/refresh" % (self.host, self.port, section_id)
+		f = urllib.urlopen(self.url)
+		
+		
 		
 import transmissionrpc
 class Transmission(transmissionrpc.Client):
@@ -268,7 +278,9 @@ def loadConf():
 	Transmission.mediapath = conf['transmission']['mediapath']
 	Transmission.tvdir = conf['transmission']['tvdir']
 	Transmission.moviedir = conf['transmission']['moviedir']
-
+	Plexmediaserver.host = conf['plexmediaserver']['host']
+	Plexmediaserver.port = conf['plexmediaserver']['port']
+	
 import time
 from daemon import runner # python-daemon2
 import logging.handlers
