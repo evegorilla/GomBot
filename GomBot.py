@@ -32,7 +32,6 @@ class GomBot(telepot.Bot):
 		log.debug('Listening ...')
 		while 1:
 			time.sleep(10)
-			torrent_garbage_collection() #토렌트 시드제거용~
 		
 	def handle(self, msg):
 		flavor = telepot.flavor(msg)
@@ -42,30 +41,36 @@ class GomBot(telepot.Bot):
 			content_type, chat_type, chat_id = telepot.glance(msg)
 			log.info('Normal Message:%s %s %s', content_type, chat_type, chat_id)
 			log.debug(json.dumps(msg, ensure_ascii=False))
-			command = str(msg['text'])
+			command = msg['text']
 			from_id = msg['from']['id']
 			chat_id = msg['chat']['id'] 
 			log.debug(command)
-			if command == "/셧다운":
+			
+			if not command.startswith('/'): # 명령커맨드일 경우
+				return
+			
+			keyword = command[1:].split(' ')
+			
+			if keyword[0] == "셧다운":
 				log.debug("셧다운 권한확인")
-				if str(from_id) in self.admin_id:
+				if from_id in self.admin_id:
 					self.sendMessage(chat_id,"모든 서버를 셧다운 합니다.")
 				else:
 					log.debug(" 권한 없는 사용자(%d)가 셧다운 시도" % from_id)
 					self.sendMessage(chat_id,"권한이 없습니다.")
-			elif command == '/하이':
+			elif keyword[0] == "하이":
 				self.sendMessage(chat_id,"반갑구만 반가워요")
-			elif command.startswith('/검색'): # 토렌트 검색해야지
+					
+			elif keyword[0] == "검색": # 토렌트 검색해야지
 				if chat_id in self.public_room: # 채팅방이 공방이면
 					self.sendMessage(chat_id, "공개방입니다.\n 봇을 따로 소환해 검색하세요")
 					return
-				
-				keyword = command[4:]
-				result = self.get_search_list(keyword)
+
+				result = self.get_search_list(keyword[1])
 				self.set_menu(chat_id, from_id,result)
 								
-			elif command.startswith('/받기'): # 토렌트 검색해야지
-				idx = int(command[3:].split('.')[0]) - 1
+			elif keyword[0] == '받기': # 토렌트 검색해야지
+				idx = int(keyword[1].split('.')[0]) - 1
 				menu = self.menu[chat_id][idx]
 				log.debug("다운로드주소 : %s" % menu['link'])
 				
@@ -77,17 +82,25 @@ class GomBot(telepot.Bot):
 				to = tc.add_torrent(menu['link'],download_dir=dn_path)
 				
 				if (to):
-					for k in to.keys():
-						log.debug("토렌트id : %s" % k)
-						self.sendMessage(chat_id,'%s 다운로딩' % menu['title'])
-						item = tc.get_torrents(k)
-						log.debug(item.name)
+					log.debug("토렌트id : %s" % k)
+					self.sendMessage(chat_id,'%s 다운로딩' % menu['title'])
+					log.debug(item.name)
 				else:
 					self.sendMessage(chat_id,'다운로드 실패')
+			
+			elif keyword[0] == '확인': # 토렌트 진행상황 확인
+				tc = Transmission()
+				torrents = tc.get_torrents()
+			
+				if len(torrents) == 0:
+					self.sendMessage(chat_id, "다운로드중인 파일은 없습니다.")
+					return
 				
-
-			# Do your stuff according to `content_type` ...
-
+				str = ''
+				for torrent in torrents:
+					str = str + "%s - %s peers %.2f %%\n" % (torrent.name[:15],torrent,peersConnected, torrent.percentDone*100)
+				self.sendMessage(chat_id, str)
+				
 		# inline query - need `/setinline`
 		elif flavor == 'inline_query':
 			query_id, from_id, query_string = telepot.glance(msg, flavor=flavor)
@@ -166,6 +179,10 @@ class GomBot(telepot.Bot):
 		show_keyboard = {'keyboard': output_list}
 		self.sendMessage(chat_id,'선택해주세요',reply_markup=show_keyboard)
 
+	def torrent_garbage_collection(self):
+		tc = Transmission()
+		tc.get_torrents()
+		
 		
 class Plexmediaserver():
 	#LD_LIBRARY_PATH=/usr/lib/plexmediaserver
@@ -230,10 +247,6 @@ class Transmission(transmissionrpc.Client):
 		log.info(dn_dir+"에 다운로드 합니다.")
 		return dn_dir
 
-	
-
-		
-		
 	def is_tv(self,title):
 		found = False
 		list = self.get_dir()
@@ -243,12 +256,13 @@ class Transmission(transmissionrpc.Client):
 			log.debug("_"+title + "_ TVDB를 참조합니다.")
 			# TV프로그램인지 확인해보자
 			import urllib
+			
 			import xml.etree.ElementTree as ET
-
+			
 			TVDB_TITLE='http://thetvdb.com/api/GetSeries.php?seriesname=%s&language=ko'
 
-			url = TVDB_TITLE % (urllib.quote(title))
-			rss = ET.parse(urllib.urlopen(url)).getroot()
+			url = TVDB_TITLE % (urllib.parse.quote(title))
+			rss = ET.parse(urllib.request.urlopen(url)).getroot()
 
 			seriesid = -1
 			for element in rss.findall("Series"):
