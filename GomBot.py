@@ -29,22 +29,25 @@ class GomBot(telepot.Bot):
 		self._answerer = telepot.helper.Answerer(self)
 
 	def run(self):
-		self.notifyOnMessage()
-		log.debug('Listening ...')
-		while 1:
-			tc = Transmission()
-			arr = Transmission.garbage_collection(tc)
-			
-			if len(arr)>0: #노티할애가 있으면
-				pms = Plexmediaserver()
-				if not pms.refresh(2):
-					log.debug("refresh 실패로 완료된 시드유지함")
-					return
-				str = "\n".join(arr)
-				for room in self.public_room:	
-					self.sendMessage(room, "%s\n 준비되었습니다."%str)
-
-			time.sleep(10)
+		try:
+			self.notifyOnMessage()
+			log.debug('Listening ...')
+			while 1:
+				tc = Transmission()
+				arr = Transmission.garbage_collection(tc)
+				
+				if len(arr)>0: #노티할애가 있으면
+					pms = Plexmediaserver()
+					if not pms.refresh(2):
+						log.debug("refresh 실패로 완료된 시드유지함")
+						return
+					str = "\n".join(arr)
+					for room in self.public_room:	
+						self.sendMessage(room, "%s\n 준비되었습니다."%str)
+	
+				time.sleep(10)
+		except Exception as e:
+			log.exception("Main loop error")
 
 	def handle(self, msg):
 		flavor = telepot.flavor(msg)
