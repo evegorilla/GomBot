@@ -119,7 +119,7 @@ class GomBot(telepot.Bot):
 				pms = Plexmediaserver()
 				arr = [1,2]
 				for num in arr:
-					pms.refresh(arr[num])
+					pms.refresh(num)
 			else:
 				str = {"/검색 [검색어] - 검색어를 토렌트사이트에서 검색합니다.",
 					   "/확인 - 토렌트 다운로드 진행상황을 확인합니다.",
