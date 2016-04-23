@@ -118,7 +118,7 @@ class GomBot(telepot.Bot):
 			elif keyword[0] == "갱신":
 				pms = Plexmediaserver()
 				arr = [1,2]
-				if num in arr:
+				for num in arr:
 					pms.refresh(2)
 			else:
 				str = {"/검색 [검색어] - 검색어를 토렌트사이트에서 검색합니다.",
