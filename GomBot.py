@@ -115,7 +115,18 @@ class GomBot(telepot.Bot):
 				for torrent in torrents:
 					str = str + "%s - %s peers %.2f %%\n" % (torrent.name[:20],torrent.peersConnected, torrent.percentDone*100)
 				self.sendMessage(chat_id, str)
-				
+			elif keyword[0] == "갱신":
+				pms = Plexmediaserver()
+				arr = [1,2]
+				if num in arr:
+					pms.refresh(2)
+			else:
+				str = {"/검색 [검색어] - 검색어를 토렌트사이트에서 검색합니다.",
+					   "/확인 - 토렌트 다운로드 진행상황을 확인합니다.",
+					   "/갱신 - Plex Media Server 라이브러리를 갱신합니다."}
+				str = "\n".join(str)
+				self.sendMessage(chat_id,str)
+					   
 		# inline query - need `/setinline`
 		elif flavor == 'inline_query':
 			query_id, from_id, query_string = telepot.glance(msg, flavor=flavor)
