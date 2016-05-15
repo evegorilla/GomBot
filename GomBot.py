@@ -82,7 +82,7 @@ class GomBot(telepot.Bot):
 					self.sendMessage(chat_id, "공개방입니다.\n 봇을 따로 소환해 검색하세요")
 					return
 
-				result = self.get_search_list(keyword[1])
+				result = self.get_search_list(' '.join(keyword[1:]))
 				self.set_menu(chat_id, from_id,result)
 								
 			elif keyword[0] == '받기': # 토렌트 검색해야지
@@ -154,7 +154,7 @@ class GomBot(telepot.Bot):
 	def get_search_list(self, keyword):
 		from bs4 import BeautifulSoup
 		import urllib.request
-		
+		log.debug(keyword)
 		url = Transmission.url % urllib.request.quote(keyword)
 		headers = { 'User-Agent' : 'Mozilla/5.0' }
 		req = urllib.request.Request(url, None, headers)
