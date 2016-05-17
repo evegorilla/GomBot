@@ -1,18 +1,21 @@
 {
         "telegram" : {
-                "token" : "텔레그램에서 받은 토큰",
-                "admin_id" : [본인아이디], #어드민 리스트
-                "public_room" : [공개방] #공개방에선 토렌트 검색불가
+                "token" : "텔레그램에서 받은 토큰", #telegram bot token
+                "admin_id" : [본인아이디], #from_id ()숫자로 된 본인 아이디 from_id 찾아 적으면 됨)
+                "public_room" : [공개방] #chat_id ()공개방에선 토렌트 검색불가)
         },
         "transmission" : {
-                "host" : "서버아이피",
-                "port" : 9091,
-                "user" : "아이디",
-                "pass" : "패스워드",
-                "url" : "https://torrentkim3.net/bbs/rss.php?k=%s",
-                "mediapath" : "/opt/Media/", #미디어파일 디렉토리경로 
-                "tvdir": "TV Shows", 
-                "moviedir":"Movies"
+                "host" : "서버아이피",#server_ip
+                "port" : 9091, #server_port
+                "user" : "아이디", #id
+                "pass" : "패스워드", #password
+                "url" : "https://torrentkim3.net/bbs/rss.php?k=%s", #search_url
+                "mediapath" : "/opt/Media/", #media directory path미디어파일 디렉토리경로 
+                "tvdir": "TV Shows", #tv directory name
+                "moviedir":"Movies" #movie directory name
+        },
+        "plexmediaserver" : {
+                "host" : "플렉스서버아이피", # plexmediaserver ip
+                "port" : 플렉스포트 # plexmediaserver port
         }
-
 }
