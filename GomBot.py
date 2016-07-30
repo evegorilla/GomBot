@@ -30,7 +30,7 @@ class GomBot(telepot.Bot):
 
 	def run(self):
 		try:
-			self.notifyOnMessage()
+			self.message_loop(self.handle)
 			log.debug('Listening ...')
 			while 1:
 				tc = Transmission()
@@ -50,8 +50,7 @@ class GomBot(telepot.Bot):
 			log.exception("Main loop error")
 
 	def handle(self, msg):
-		flavor = telepot.flavor(msg)
-
+		flavor = 'normal'
 		# normal message
 		if flavor == 'normal':
 			content_type, chat_type, chat_id = telepot.glance(msg)
@@ -148,8 +147,8 @@ class GomBot(telepot.Bot):
 
 			# Remember the chosen answer to do better next time
 
-		else:
-			raise telepot.BadFlavor(msg)
+		#else:
+		#	raise telepot.BadFlavor(msg)
 	
 	def get_search_list(self, keyword):
 		from bs4 import BeautifulSoup
