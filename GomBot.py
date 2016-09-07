@@ -66,9 +66,14 @@ class GomBot(telepot.Bot):
 			
 			keyword = command[1:].split(' ')
 			
+			if not from_id in self.admin_id:
+					log.debug(" 권한 없는 사용자(%d)가 봇을 호출" % from_id)
+					self.sendMessage(chat_id,"저는 주인님의 명령만 듣습니다. 본인의 봇을 소환하세요.")
+					return
+					
 			if keyword[0] == "셧다운":
 				log.debug("셧다운 권한확인")
-				if from_id in self.admin_id:
+				if from_id in self.admin_id: # 앞에서 권한체크하므로 이제 필요없음, 삭제예정
 					self.sendMessage(chat_id,"모든 서버를 셧다운 합니다.")
 				else:
 					log.debug(" 권한 없는 사용자(%d)가 셧다운 시도" % from_id)
@@ -80,7 +85,7 @@ class GomBot(telepot.Bot):
 				if chat_id in self.public_room: # 채팅방이 공방이면
 					self.sendMessage(chat_id, "공개방입니다.\n 봇을 따로 소환해 검색하세요")
 					return
-
+								
 				result = self.get_search_list(' '.join(keyword[1:]))
 				self.set_menu(chat_id, from_id,result)
 								
