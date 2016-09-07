@@ -68,7 +68,7 @@ class GomBot(telepot.Bot):
 			
 			if not from_id in self.admin_id:
 					log.debug(" 권한 없는 사용자(%d)가 봇을 호출" % from_id)
-					self.sendMessage(chat_id,"저는 주인님의 명령만 듣습니다. 본인의 봇을 소환하세요.")
+					self.sendMessage(chat_id,"저는 주인님의 명령만 듣습니다. 본인의 봇을 소환하세요. https://blog.zeroidle.com 에서 도움을 얻을 수 있습니다.")
 					return
 					
 			if keyword[0] == "셧다운":
