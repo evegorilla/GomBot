@@ -9,7 +9,7 @@
                 "port" : 9091, #server_port
                 "user" : "아이디", #id
                 "pass" : "패스워드", #password
-                "url" : "https://torrentkim3.net/bbs/rss.php?k=%s", #search_url
+                "url" : "https://torrentkim5.net/bbs/rss.php?k=%s", #search_url
                 "mediapath" : "/opt/Media/", #media directory path미디어파일 디렉토리경로 
                 "tvdir": "TV Shows", #tv directory name
                 "moviedir":"Movies" #movie directory name
