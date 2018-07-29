@@ -1,5 +1,6 @@
 import transmissionrpc
 import logging
+import json
 
 log = logging.getLogger("GomBot")
 
