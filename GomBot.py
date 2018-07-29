@@ -193,6 +193,37 @@ class GomBot(telepot.Bot):
             arrData.append(arr)
         return arrData
 
+    def get_magnet_url_from_torrenthaja(self, url):
+        if url.startswith("."): # 상대경로
+            url = "https://torrenthaja.com/bbs/" + url
+        else: # 절대경로
+            pass
+
+        from bs4 import BeautifulSoup
+        import urllib.request
+
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        req = urllib.request.Request(url, None, headers)
+        handle = urllib.request.urlopen(req)
+
+        data = handle.read()
+        soup = BeautifulSoup(data, "lxml")
+
+        count = 0
+
+        arrData = []
+        import re
+        for item in soup.findAll(attrs={'class': 'btn btn-success btn-xs'}):
+            count = count + 1
+            if (count > 10):
+                break
+
+            regex = re.compile('[^magnet_link\(\'][\w\d]+')
+            link = regex.search(item['onclick'])
+            arr = {}
+            arr['link'] = "magnet:?xt=urn:btih:" + link.group()
+            arrData.append(arr)
+        return arrData
 
     def get_search_list_old(self, keyword):
         from bs4 import BeautifulSoup
