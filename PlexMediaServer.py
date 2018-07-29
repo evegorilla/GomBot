@@ -1,3 +1,9 @@
+import urllib
+import logging
+
+log = logging.getLogger("GomBot")
+
+
 class Plexmediaserver():
     # LD_LIBRARY_PATH=/usr/lib/plexmediaserver
     # curl http://192.168.0.20:32400/library/sections/2/refresh

@@ -1,4 +1,7 @@
 import transmissionrpc
+import logging
+
+log = logging.getLogger("GomBot")
 
 
 class Transmission(transmissionrpc.Client):

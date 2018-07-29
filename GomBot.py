@@ -9,7 +9,6 @@ import logging
 import json
 import pprint
 #import feedparser
-import urllib
 import sys
 from _ctypes import Array
 
@@ -100,13 +99,14 @@ class GomBot(telepot.Bot):
                 idx = int(keyword[1].split('.')[0]) - 1
                 menu = self.menu[chat_id][idx]
                 log.debug("다운로드주소 : %s" % menu['link'])
+                dn_link = self.get_magnet_url_from_torrenthaja(menu['link'])
 
                 tc = Transmission()
                 dn_path = tc.get_dnpath(menu['title'])
                 log.debug("title: %s " % menu['title'])
-                log.debug("link: %s " % menu['link'])
+                log.debug("link: %s " % dn_link)
                 log.debug("다운로드경로는 %s" % dn_path)
-                to = tc.add_torrent(menu['link'], download_dir=dn_path)
+                to = tc.add_torrent(dn_link, download_dir=dn_path)
 
                 if (to):
                     log.debug("downloading : %s %s" % (to.id, to.name))
