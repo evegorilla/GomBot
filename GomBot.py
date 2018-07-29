@@ -223,7 +223,7 @@ class GomBot(telepot.Bot):
             arr = {}
             arr['link'] = "magnet:?xt=urn:btih:" + link.group()
             arrData.append(arr)
-        return arrData
+        return arr['link']
 
     def get_search_list_old(self, keyword):
         from bs4 import BeautifulSoup
