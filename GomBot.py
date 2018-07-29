@@ -1,12 +1,14 @@
 #!/usr/bin/env python3.5
 # -*- coding: utf-8 -*-
 
+from PlexMediaServer import Plexmediaserver
+from Transmission import Transmission
 import telepot
 import time
 import logging
 import json
 import pprint
-import feedparser
+#import feedparser
 import urllib
 import sys
 from _ctypes import Array
@@ -14,6 +16,7 @@ from _ctypes import Array
 
 # reload(sys)
 # sys.setdefaultencoding('utf-8')
+log = logging.getLogger("GomBot")
 
 class GomBot(telepot.Bot):
     token = ''
@@ -82,6 +85,8 @@ class GomBot(telepot.Bot):
                     self.sendMessage(chat_id, "권한이 없습니다.")
             elif keyword[0] == "하이":
                 self.sendMessage(chat_id, "반갑구만 반가워요")
+            elif keyword[0] == "정보":
+                self.sendMessage(chat_id,"chat_id:%s\nfrom_id:%s"%(chat_id, from_id))
 
             elif keyword[0] == "검색":  # 토렌트 검색해야지
                 if chat_id in self.public_room:  # 채팅방이 공방이면
@@ -164,6 +169,37 @@ class GomBot(telepot.Bot):
         log.debug(keyword)
         url = Transmission.url % urllib.request.quote(keyword)
         log.debug(url)
+
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        req = urllib.request.Request(url, None, headers)
+        handle = urllib.request.urlopen(req)
+
+        data = handle.read()
+        soup = BeautifulSoup(data, "lxml")
+
+        count = 0
+
+        arrData = []
+        for item in soup.findAll(attrs={'class': 'td-subject ellipsis'}):
+            count = count + 1
+            if (count > 10):
+                break
+
+            arr = {}
+            arr['title'] = item.a.text
+            arr['link'] = item.a['href']
+            log.debug("%d 제목 : %s" % (count, arr['title']))
+            log.debug("%d link1 : %s" % (count, arr['link']))
+            arrData.append(arr)
+        return arrData
+
+
+    def get_search_list_old(self, keyword):
+        from bs4 import BeautifulSoup
+        import urllib.request
+        log.debug(keyword)
+        url = Transmission.url % urllib.request.quote(keyword)
+        log.debug(url)
         headers = {'User-Agent': 'Mozilla/5.0'}
         req = urllib.request.Request(url, None, headers)
         handle = urllib.request.urlopen(req)
@@ -182,7 +218,10 @@ class GomBot(telepot.Bot):
             arr = {}
             arr['title'] = item.title.next_element
             arr['link'] = item.link.next_element
+            arr['link2'] = item.link.next_element.next_element
             log.debug("%d 제목 : %s" % (count, arr['title']))
+            log.debug("%d link1 : %s" % (count, arr['link']))
+            log.debug("%d link2 : %s" % (count, arr['link2']))
             arrData.append(arr)
 
         return arrData
@@ -210,116 +249,13 @@ class GomBot(telepot.Bot):
             output_list.append(temp_list)
 
         show_keyboard = {'keyboard': output_list}
-        if output_list is None:
+        if len(output_list) < 1:
             self.sendMessage(chat_id, '검색결과가 없습니다')
         else:
             self.sendMessage(chat_id, '선택해주세요', reply_markup=show_keyboard)
 
-class Plexmediaserver():
-    # LD_LIBRARY_PATH=/usr/lib/plexmediaserver
-    # curl http://192.168.0.20:32400/library/sections/2/refresh
-    host = ''
-    port = ''
-
-    def __init__(selfself):
-        log.debug("plex init")
-
-    def refresh(self, section_id):
-        try:
-            refresh_url = "http://%s:%s/library/sections/%s/refresh" % (self.host, self.port, section_id)
-            log.debug("Plex Media Server - %d refresh", section_id)
-            log.debug(refresh_url)
-            f = urllib.request.urlopen(refresh_url)
-            return True
-        except:
-            return False
 
 
-import transmissionrpc
-
-
-class Transmission(transmissionrpc.Client):
-    shost = ''
-    sport = ''
-    uname = ''
-    upass = ''
-    url = ''
-    mediapath = ''
-    tvdir = ''
-    moviedir = ''
-    tc = ''
-
-    def __init__(self):
-        super(Transmission, self).__init__(self.shost, self.sport, self.uname, self.upass)
-
-    def garbage_collection(self):
-        torrents = self.get_torrents()
-
-        arr = []
-        for torrent in torrents:
-            if torrent.percentDone == 1:  # Downloaded
-                self.remove_torrent(torrent.id)
-                log.debug("Downloaded - %d %s" % (torrent.id, torrent.name))
-                ext_str = torrent.downloadDir.replace(self.mediapath, '')
-                arr.append("%s (%s)" % (torrent.name, ext_str))
-        return arr
-
-    def get_dir(self):
-        import os
-        list = os.listdir(self.mediapath + self.tvdir)
-        log.debug(json.dumps(list, ensure_ascii=False))
-        return list
-
-    def get_dnpath(self, filename):
-        title = filename.split('.')[0]
-        log.debug(title + " 제목을  기준으로 확인중")
-        list = self.get_dir()
-
-        found = False
-        for n in list:
-            if n.replace(' ', '') in title.replace(' ', ''):
-                # 문자열이 존재하면
-                dn_dir = self.mediapath + self.tvdir + "/" + n + "/"
-                log.info("기존 디렉토리 찾음 " + n)
-                return dn_dir
-
-        if (self.is_tv(title)):
-            # TV구만
-            dn_dir = self.mediapath + self.tvdir + "/" + title + "/"
-        else:
-            # 영화라 치자
-            # dn_dir =  self.mediapath+self.moviedir+"/"+title+"/"
-            dn_dir = self.mediapath + self.tvdir + "/" + title + "/"
-
-        log.info(dn_dir + "에 다운로드 합니다.")
-        return dn_dir
-
-    def is_tv(self, title):
-        found = False
-        list = self.get_dir()
-
-        if (not found):
-            log.debug("_" + title + "_ TVDB를 참조합니다.")
-            # TV프로그램인지 확인해보자
-            import urllib
-
-            import xml.etree.ElementTree as ET
-
-            TVDB_TITLE = 'http://thetvdb.com/api/GetSeries.php?seriesname=%s&language=ko'
-
-            url = TVDB_TITLE % (urllib.parse.quote(title))
-            rss = ET.parse(urllib.request.urlopen(url)).getroot()
-
-            seriesid = -1
-            for element in rss.findall("Series"):
-                seriesid = element.findtext("seriesid")
-                dn_dir = self.mediapath + self.tvdir + "/" + title + "/"
-                log.debug(dn_dir)
-            if (seriesid != -1):
-                found = True
-            else:
-                log.debug("찾지 못했습니다." + url)
-        return found
 
 
 def loadConf():
@@ -342,35 +278,35 @@ def loadConf():
     Plexmediaserver.host = conf['plexmediaserver']['host']
     Plexmediaserver.port = conf['plexmediaserver']['port']
 
+if __name__ == "__main__":
+    import time
+    from daemon import runner  # python-daemon2
+    import logging.handlers
 
-import time
-from daemon import runner  # python-daemon2
-import logging.handlers
+    # load configuration
+    conf_file = 'gombot-settings.json'
+    loadConf()
 
-# load configuration
-conf_file = 'gombot-settings.json'
-loadConf()
+    bot = GomBot()
 
-bot = GomBot()
-
-log = logging.getLogger("GomBot")
-log.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s %(name)s:%(levelname)s %(message)s (%(filename)s:%(lineno)s)",
-                              datefmt='%Y-%m-%d %H:%M:%S')
-handler = logging.handlers.RotatingFileHandler("GomBot.log", maxBytes=10240, backupCount=1)
-handler.setFormatter(formatter)
-handler2 = logging.StreamHandler()
-handler2.setFormatter(formatter)
-log.addHandler(handler)
-log.addHandler(handler2)
-
-if (len(sys.argv) > 1 and sys.argv[1] == "foreground"):
-    log.info("Foreground mode start")
+    log = logging.getLogger("GomBot")
     log.setLevel(logging.DEBUG)
-    log.debug("Debug mode setted.")
-    bot.run()
-    exit()
+    formatter = logging.Formatter("%(asctime)s %(name)s:%(levelname)s %(message)s (%(filename)s:%(lineno)s)",
+                                  datefmt='%Y-%m-%d %H:%M:%S')
+    handler = logging.handlers.RotatingFileHandler("GomBot.log", maxBytes=10240, backupCount=1)
+    handler.setFormatter(formatter)
+    handler2 = logging.StreamHandler()
+    handler2.setFormatter(formatter)
+    log.addHandler(handler)
+    log.addHandler(handler2)
 
-daemon_runner = runner.DaemonRunner(bot)
-daemon_runner.daemon_context.files_preserve = [handler.stream]
-daemon_runner.do_action()
+    if (len(sys.argv) > 1 and sys.argv[1] == "foreground"):
+        log.info("Foreground mode start")
+        log.setLevel(logging.DEBUG)
+        log.debug("Debug mode setted.")
+        bot.run()
+        exit()
+
+    daemon_runner = runner.DaemonRunner(bot)
+    daemon_runner.daemon_context.files_preserve = [handler.stream]
+    daemon_runner.do_action()
