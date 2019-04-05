@@ -181,6 +181,7 @@ class GomBot(telepot.Bot):
 
         arrData = []
         for item in soup.findAll(attrs={'class': 'td-subject ellipsis'}):
+        #for item in soup.findAll(attrs={'class': 'sch_word'}):
             count = count + 1
             if (count > 10):
                 break
@@ -188,6 +189,10 @@ class GomBot(telepot.Bot):
             arr = {}
             arr['title'] = item.a.text
             arr['link'] = item.a['href']
+            if arr['link'] == '':
+                # <a href=""><span class="color-grey">[방영중]</span></a>&nbsp;
+                arr['title'] = item.a.findNext('a').text
+                arr['link'] = item.a.findNext('a')['href']
             log.debug("%d 제목 : %s" % (count, arr['title']))
             log.debug("%d link1 : %s" % (count, arr['link']))
             arrData.append(arr)
