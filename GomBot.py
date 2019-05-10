@@ -3,6 +3,7 @@
 
 from PlexMediaServer import Plexmediaserver
 from Transmission import Transmission
+from HTTPRedirectHandler import HTTPRedirectHandler
 import telepot
 import time
 import logging
@@ -99,6 +100,7 @@ class GomBot(telepot.Bot):
                 idx = int(keyword[1].split('.')[0]) - 1
                 menu = self.menu[chat_id][idx]
                 log.debug("다운로드주소 : %s" % menu['link'])
+                #dn_link = self.get_magnet_url_from_torrenthaja(menu['link'])
                 dn_link = self.get_magnet_url_from_torrenthaja(menu['link'])
 
                 tc = Transmission()
@@ -180,7 +182,7 @@ class GomBot(telepot.Bot):
         count = 0
 
         arrData = []
-        for item in soup.findAll(attrs={'class': 'td-subject ellipsis'}):
+        for item in soup.findAll("div", {"class": "td-subject ellipsis"}):
         #for item in soup.findAll(attrs={'class': 'sch_word'}):
             count = count + 1
             if (count > 10):
@@ -198,19 +200,27 @@ class GomBot(telepot.Bot):
             arrData.append(arr)
         return arrData
 
+
     def get_magnet_url_from_torrenthaja(self, url):
+        import requests
         if url.startswith("."): # 상대경로
-            url = "https://torrenthaja.com/bbs/" + url
+            url = "https://torrenthaja1.com/bbs/" + url
         else: # 절대경로
             pass
-
         from bs4 import BeautifulSoup
         import urllib.request
+        print(url)
+        print("---------------------")
 
         headers = {'User-Agent': 'Mozilla/5.0'}
-        req = urllib.request.Request(url, None, headers)
-        handle = urllib.request.urlopen(req)
-
+        #req = urllib.request.Request(url, None, headers)
+        #handle = urllib.request.urlopen(req)
+        import http.cookiejar
+        cj = http.cookiejar.CookieJar()
+        http.client.HTTPConnection.debuglevel = 1
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+        opener.addheaders =  [("User-agent", "Mozilla/5.0")]
+        handle = opener.open(url)
         data = handle.read()
         soup = BeautifulSoup(data, "lxml")
 
@@ -218,17 +228,21 @@ class GomBot(telepot.Bot):
 
         arrData = []
         import re
-        for item in soup.findAll(attrs={'class': 'btn btn-success btn-xs'}):
-            count = count + 1
-            if (count > 10):
-                break
+        item = soup.find("button", {"class": "btn btn-success btn-xs"})
+        import http.client
+        print("------------+++--------------")
+        print(item['onclick'])
+         
+        
+        return self.get_magnet_url(item['onclick'])
 
-            regex = re.compile('[^magnet_link\(\'][\w\d]+')
-            link = regex.search(item['onclick'])
-            arr = {}
-            arr['link'] = "magnet:?xt=urn:btih:" + link.group()
-            arrData.append(arr)
-        return arr['link']
+    def get_magnet_url(self, text):
+        import re
+        p = re.compile('\'[0-9A-Z]+\'')
+        m = p.search(text)
+        rtnText = "magnet:?xt=urn:btih:" + m.group()[1:-1]
+        print(rtnText)
+        return rtnText
 
     def get_search_list_old(self, keyword):
         from bs4 import BeautifulSoup
